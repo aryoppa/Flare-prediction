@@ -1,5 +1,5 @@
 # requirements.txt
-numpy
+numpy==1.24.4
 pandas
 keras-tcn
 matplotlib
