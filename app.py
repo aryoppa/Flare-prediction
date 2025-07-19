@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # Load data
     print("\nLoading and preprocessing data...")
-    X_train_tcn, X_test_tcn, y_train_cat, y_test_cat, y_train, y_test, split_index, valid_data, class_weight_dict = load_and_preprocess_data()
+    X_train_tcn, X_test_tcn, y_train_cat, y_test_cat, y_train, y_test, split_index, valid_data, class_weight_dict = load_and_preprocess_data(split_ratio)
 
     # Train model
     print(f"\nTraining model ({args.mode})...")

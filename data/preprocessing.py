@@ -5,7 +5,7 @@ import os
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.utils import to_categorical
 
-def load_and_preprocess_data(split_ratio=0.7):
+def load_and_preprocess_data(split_ratio):
     base_dir = "data/datasets"
     image_features = np.load(os.path.join(base_dir, "sdo_image_features_new.npy"))
     valid_data = pd.read_csv(os.path.join(base_dir, "flare_image_metadata_with_label_new.csv"))
@@ -52,7 +52,7 @@ def load_and_preprocess_data(split_ratio=0.7):
     labels_cat = to_categorical(labels, num_classes=num_classes)
 
     # Time-based split
-    split_index = int(len(data_fix) * 0.7)
+    split_index = int(len(data_fix) * split_ratio)
     X_train = scaled_features[:split_index]
     X_test = scaled_features[split_index:]
     y_train = labels[:split_index]
