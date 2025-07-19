@@ -14,15 +14,26 @@ st.set_page_config(page_title="Solar Flare Prediction", layout="centered")
 st.title("☀️ Solar Flare Class Prediction App")
 
 # --- Sidebar ---
-split_ratio = st.sidebar.slider("Split Ratio", 1, 90, 70)
+split_ratio = st.sidebar.slider("Split Ratio", 1, 100, 70)
 epochs = st.sidebar.slider("Epochs", 1, 20, 5)
 batch_size = st.sidebar.selectbox("Batch Size", [16, 32, 64], index=1)
 
 with st.spinner("Loading and preprocessing data..."):
     X_train_tcn, X_test_tcn, y_train_cat, y_test_cat, y_train, y_test, split_index, data_fix, class_weight_dict = load_and_preprocess_data(split_ratio)
     num_classes = y_train_cat.shape[1]
+    st.write(f"Train shape: {X_train_tcn.shape}, Test shape: {X_test_tcn.shape}")
 
+# ...existing code...
 st.success("Data loaded!")
+
+# --- Data validation ---
+if np.isnan(X_test_tcn).any() or np.isinf(X_test_tcn).any():
+    st.error("X_test_tcn contains NaN or infinite values. Please check your preprocessing.")
+    st.stop()
+if X_test_tcn.shape[0] == 0:
+    st.error("X_test_tcn is empty. Adjust your split ratio or check your data.")
+    st.stop()
+# ...existing code...
 
 # --- Train model ---
 st.subheader("Train and Compare Models")

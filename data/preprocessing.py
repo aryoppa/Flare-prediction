@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.utils import to_categorical
 
 def load_and_preprocess_data(split_ratio):
+    print(split_ratio)
     base_dir = "data/datasets"
     image_features = np.load(os.path.join(base_dir, "sdo_image_features_new.npy"))
     valid_data = pd.read_csv(os.path.join(base_dir, "flare_image_metadata_with_label_new.csv"))
@@ -52,7 +53,8 @@ def load_and_preprocess_data(split_ratio):
     labels_cat = to_categorical(labels, num_classes=num_classes)
 
     # Time-based split
-    split_index = int(len(data_fix) * split_ratio)
+    split_index = int(len(data_fix) * split_ratio / 100)
+    print(f"Split index: {split_index}")
     X_train = scaled_features[:split_index]
     X_test = scaled_features[split_index:]
     y_train = labels[:split_index]
@@ -63,7 +65,8 @@ def load_and_preprocess_data(split_ratio):
     # Reshape for TCN: (samples, timesteps, features)
     X_train_tcn = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
     X_test_tcn = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
-
+    print(f"Train shape: {X_train_tcn.shape}, Test shape: {X_test_tcn.shape}")
+    
     # Compute class weights
     from sklearn.utils.class_weight import compute_class_weight
     class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train)
