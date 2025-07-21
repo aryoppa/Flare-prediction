@@ -111,12 +111,17 @@ with col4:
     st.subheader(f"Manual TCN Model ({model_option})")
     try:
         model_manual = tf.keras.models.load_model(manual_model_path)
-        st.markdown("#### **Testing Data**")
-        acc_manual_test = evaluate_model(model_manual, X_test, y_test_cat, np.argmax(y_test_cat, axis=1), class_labels, model_name="Manual-TCN Test", cmap="Greens")
-
-        st.markdown("#### **Training Data**")
-        acc_manual_train = evaluate_model(model_manual, X_train, y_train_cat, np.argmax(y_train_cat, axis=1), class_labels, model_name="Manual-TCN Train", cmap="Oranges")
-
+        y_pred_manual = np.argmax(model_manual.predict(X_train), axis=1)
+        acc_manual = np.mean(y_pred_manual == y_train_true)
+        report_manual = classification_report(y_train_true, y_pred_manual, target_names=class_labels, output_dict=True)
+        cm_manual = confusion_matrix(y_train_true, y_pred_manual)
+        st.write(f"**Accuracy:** {acc_manual:.4f}")
+        st.write("Classification Report")
+        st.dataframe(pd.DataFrame(report_manual).transpose())
+        st.write("Confusion Matrix")
+        fig2, ax2 = plt.subplots()
+        sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
+        st.pyplot(fig2)
     except Exception as e:
         st.error(f"Gagal load/model manual: {e}")
 
