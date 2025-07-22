@@ -15,9 +15,7 @@ st.title("☀️ Solar Flare Prediction: Keras-TCN vs Manual TCN")
 
 # --- Path model disimpan di folder trained_model/ ---
 MODEL_DIR = 'trained_model'
-KERAS_MODEL_PATH = os.path.join(MODEL_DIR, 'solarflare_model_plain.keras')
 MANUAL_MODEL_PATH = os.path.join(MODEL_DIR, 'solarflare_tcn_manual_plain.h5')
-KERAS_MODEL_WEIGHTED_PATH = os.path.join(MODEL_DIR, 'solarflare_model_weighted.h5')
 MANUAL_MODEL_WEIGHTED_PATH = os.path.join(MODEL_DIR, 'solarflare_tcn_manual_weighted.h5')
 
 # --- Load data dengan fungsi preprocessing ---
@@ -42,37 +40,34 @@ st.markdown("### Pilih Model yang Akan Dibandingkan")
 model_option = st.radio("Pilih mode training:", ["plain", "weighted"])
 
 if model_option == "plain":
-    keras_model_path = KERAS_MODEL_PATH
+    keras_model_path = MANUAL_MODEL_PATH
     manual_model_path = MANUAL_MODEL_PATH
 else:
-    keras_model_path = KERAS_MODEL_WEIGHTED_PATH
+    keras_model_path = MANUAL_MODEL_WEIGHTED_PATH
     manual_model_path = MANUAL_MODEL_WEIGHTED_PATH
 
 col1, col2, col3, col4= st.columns(4)
 with col1:
-    st.subheader(f"Keras-TCN Model ({model_option})")
+    st.subheader(f"Manual TCN Model ({model_option}) Fitting")
     try:
-        model_keras = tf.keras.models.load_model(
-            keras_model_path,
-            custom_objects={'TCN': TCN}  # <-- Tambahkan ini!
-        )
-        model = tf.keras.models.load_model('trained_model/solarflare_model_plain.keras', custom_objects={'TCN': TCN})
-        y_pred_keras = np.argmax(model_keras.predict(X_test), axis=1)
-        acc_keras = np.mean(y_pred_keras == y_test_true)
-        report_keras = classification_report(y_test_true, y_pred_keras, target_names=class_labels, output_dict=True)
-        cm_keras = confusion_matrix(y_test_true, y_pred_keras)
-        st.write(f"**Accuracy:** {acc_keras:.4f}")
+        model_manual = tf.keras.models.load_model(manual_model_path)
+        y_pred_manual = np.argmax(model_manual.predict(X_train), axis=1)
+        acc_manual = np.mean(y_pred_manual == y_train_true)
+        report_manual = classification_report(y_train_true, y_pred_manual, target_names=class_labels, output_dict=True)
+        cm_manual = confusion_matrix(y_train_true, y_pred_manual)
+        st.write(f"**Accuracy:** {acc_manual:.4f}")
         st.write("Classification Report")
-        st.dataframe(pd.DataFrame(report_keras).transpose())
+        st.dataframe(pd.DataFrame(report_manual).transpose())
         st.write("Confusion Matrix")
-        fig1, ax1 = plt.subplots()
-        sns.heatmap(cm_keras, annot=True, fmt='d', cmap='Blues', xticklabels=class_labels, yticklabels=class_labels)
-        st.pyplot(fig1)
+        fig2, ax2 = plt.subplots()
+        sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
+        st.pyplot(fig2)
     except Exception as e:
-        st.error(f"Gagal load/model keras-tcn: {e}")
+        st.error(f"Gagal load/model manual: {e}")
+
 
 with col2:
-    st.subheader(f"Manual TCN Model ({model_option})")
+    st.subheader(f"Manual TCN Model ({model_option}) Testing")
     try:
         model_manual = tf.keras.models.load_model(manual_model_path)
         y_pred_manual = np.argmax(model_manual.predict(X_test), axis=1)
@@ -89,41 +84,41 @@ with col2:
     except Exception as e:
         st.error(f"Gagal load/model manual: {e}")
 
-with col3:
-    st.subheader(f"Manual TCN Model ({model_option})")
-    try:
-        model_manual = tf.keras.models.load_model(manual_model_path)
-        y_pred_manual = np.argmax(model_manual.predict(X_train), axis=1)
-        acc_manual = np.mean(y_pred_manual == y_train_true)
-        report_manual = classification_report(y_train_true, y_pred_manual, target_names=class_labels, output_dict=True)
-        cm_manual = confusion_matrix(y_train_true, y_pred_manual)
-        st.write(f"**Accuracy:** {acc_manual:.4f}")
-        st.write("Classification Report")
-        st.dataframe(pd.DataFrame(report_manual).transpose())
-        st.write("Confusion Matrix")
-        fig2, ax2 = plt.subplots()
-        sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
-        st.pyplot(fig2)
-    except Exception as e:
-        st.error(f"Gagal load/model manual: {e}")
+# with col3:
+#     st.subheader(f"Manual TCN Model ({model_option}) Fitting")
+#     try:
+#         model_manual = tf.keras.models.load_model(manual_model_path)
+#         y_pred_manual = np.argmax(model_manual.predict(X_train), axis=1)
+#         acc_manual = np.mean(y_pred_manual == y_train_true)
+#         report_manual = classification_report(y_train_true, y_pred_manual, target_names=class_labels, output_dict=True)
+#         cm_manual = confusion_matrix(y_train_true, y_pred_manual)
+#         st.write(f"**Accuracy:** {acc_manual:.4f}")
+#         st.write("Classification Report")
+#         st.dataframe(pd.DataFrame(report_manual).transpose())
+#         st.write("Confusion Matrix")
+#         fig3, ax3 = plt.subplots()
+#         sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
+#         st.pyplot(fig3)
+#     except Exception as e:
+#         st.error(f"Gagal load/model manual: {e}")
 
-with col4:
-    st.subheader(f"Manual TCN Model ({model_option})")
-    try:
-        model_manual = tf.keras.models.load_model(manual_model_path)
-        y_pred_manual = np.argmax(model_manual.predict(X_train), axis=1)
-        acc_manual = np.mean(y_pred_manual == y_train_true)
-        report_manual = classification_report(y_train_true, y_pred_manual, target_names=class_labels, output_dict=True)
-        cm_manual = confusion_matrix(y_train_true, y_pred_manual)
-        st.write(f"**Accuracy:** {acc_manual:.4f}")
-        st.write("Classification Report")
-        st.dataframe(pd.DataFrame(report_manual).transpose())
-        st.write("Confusion Matrix")
-        fig2, ax2 = plt.subplots()
-        sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
-        st.pyplot(fig2)
-    except Exception as e:
-        st.error(f"Gagal load/model manual: {e}")
+# with col4:
+#     st.subheader(f"Manual TCN Model ({model_option}) Testing")
+#     try:
+#         model_manual = tf.keras.models.load_model(manual_model_path)
+#         y_pred_manual = np.argmax(model_manual.predict(X_test), axis=1)
+#         acc_manual = np.mean(y_pred_manual == y_test_true)
+#         report_manual = classification_report(y_test_true, y_pred_manual, target_names=class_labels, output_dict=True)
+#         cm_manual = confusion_matrix(y_test_true, y_pred_manual)
+#         st.write(f"**Accuracy:** {acc_manual:.4f}")
+#         st.write("Classification Report")
+#         st.dataframe(pd.DataFrame(report_manual).transpose())
+#         st.write("Confusion Matrix")
+#         fig2, ax2 = plt.subplots()
+#         sns.heatmap(cm_manual, annot=True, fmt='d', cmap='Greens', xticklabels=class_labels, yticklabels=class_labels)
+#         st.pyplot(fig2)
+#     except Exception as e:
+#         st.error(f"Gagal load/model manual: {e}")
 
 # --- Akurasi Comparison Chart ---
 if 'acc_keras' in locals() and 'acc_manual' in locals():

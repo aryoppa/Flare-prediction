@@ -64,5 +64,4 @@ def load_and_preprocess_data(split_ratio):
     from sklearn.utils.class_weight import compute_class_weight
     class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train)
     class_weight_dict = dict(zip(np.unique(y_train), class_weights))
-    print(valid_data)
     return X_train_tcn, X_test_tcn, y_train_cat, y_test_cat, y_train, y_test, split_index, valid_data, class_weight_dict
