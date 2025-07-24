@@ -17,8 +17,8 @@ def compute_class_weight(y, num_classes):
     log_scaled_weight = {cls: np.log1p(total / (count + 1)) for cls, count in counts.items()}
     return class_weight, log_scaled_weight
 
-MODEL_DIR = 'final/trained_model'
-OUTDIR = "final/results"
+MODEL_DIR = 'finals/trained_model'
+OUTDIR = "finals/results"
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(OUTDIR, exist_ok=True)
 window_sizes = [2, 4, 5]
