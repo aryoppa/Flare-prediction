@@ -9,7 +9,7 @@ from tensorflow.keras.utils import to_categorical
 from imblearn.over_sampling import RandomOverSampler
 
 from data.preprocessing import load_and_preprocess_data
-from model.tcn_manual import build_manual_tcn_model
+from model.tcn_model import build_manual_tcn_model
 from utils.helpers import index_to_class_map
 
 # ========== Utility Functions ==========
