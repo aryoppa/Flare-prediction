@@ -5,7 +5,7 @@ from collections import defaultdict
 from sklearn.metrics import accuracy_score
 
 # --- Config ---
-comparison_dir = "results"  # Folder where comparison_*.csv files are saved
+comparison_dir = "v3/results_v3"  # Folder where comparison_*.csv files are saved
 output_path = os.path.join(comparison_dir, "comparison_summary_all_models.csv")
 
 # --- Scan All Comparison Files ---

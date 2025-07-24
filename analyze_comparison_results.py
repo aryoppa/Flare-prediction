@@ -4,7 +4,7 @@ import seaborn as sns
 from pathlib import Path
 
 # --- Config ---
-input_path = "results/comparison_summary_all_models.csv"  # update if needed
+input_path = "v3/results_v3/comparison_summary_all_models.csv"  # update if needed
 
 # --- Load data ---
 df = pd.read_csv(input_path)
