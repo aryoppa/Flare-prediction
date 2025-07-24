@@ -11,20 +11,32 @@ import tensorflow.keras.backend as K
 
 # --- Parameters ---
 split_ratio = 70
-MODEL_DIR = 'trained_model_v2'
+MODEL_DIR = 'trained_model_v3'
 os.makedirs(MODEL_DIR, exist_ok=True)
-OUTDIR = "data/datasets"
+OUTDIR = "results"
 os.makedirs(OUTDIR, exist_ok=True)
+
+# --- Precursor relabeling function ---
+def relabel_precursors(y, classes_of_interest=(0, 4), steps_before=1):
+    y_new = y.copy()
+    for i in range(steps_before, len(y)):
+        if y[i] in classes_of_interest:
+            y_new[i - steps_before] = y[i]
+    return y_new
 
 # --- Load Data ---
 X_train_raw, X_test_raw, y_train_cat, y_test_cat, y_train, y_test, split_index, valid_data, class_weight_dict = load_and_preprocess_data(split_ratio)
+
+# --- Apply precursor relabeling ---
+y_train_precursor = relabel_precursors(y_train, classes_of_interest=(0, 4), steps_before=1)
+y_test_precursor = relabel_precursors(y_test, classes_of_interest=(0, 4), steps_before=1)
 
 # --- Prepare data: remove dummy dimension ---
 X_train_raw = np.squeeze(X_train_raw)
 X_test_raw = np.squeeze(X_test_raw)
 
 # --- Class Weights ---
-label_counts = Counter(y_train)
+label_counts = Counter(y_train_precursor)
 total_samples = sum(label_counts.values())
 num_classes = len(label_counts)
 
@@ -69,8 +81,17 @@ def train_and_eval_tcn(X_train, y_train, X_test, y_test, num_classes, class_weig
         verbose=1
     )
 
+    # === Prediction: Test ===
     y_test_true = np.argmax(y_test, axis=1)
     y_pred = np.argmax(model.predict(X_test), axis=1)
+
+    # === Prediction: Train ===
+    y_train_true = np.argmax(y_train, axis=1)
+    y_pred_train = np.argmax(model.predict(X_train), axis=1)
+
+    # === Accuracy Comparison ===
+    train_accuracy = np.mean(y_train_true == y_pred_train)
+    test_accuracy = np.mean(y_test_true == y_pred)
 
     label_map = {0:'A', 1:'B', 2:'C', 3:'M', 4:'X'}
     target_names = [label_map[i] for i in sorted(label_map.keys())]
@@ -80,22 +101,31 @@ def train_and_eval_tcn(X_train, y_train, X_test, y_test, num_classes, class_weig
     print(f"\n--- Confusion Matrix ({mode_name}) ---")
     print(confusion_matrix(y_test_true, y_pred))
 
-    # Save model & history (with predictions!) in trained_model/
+    # === Save Model & History ===
     history_dict = history.history
     history_dict['y_test'] = y_test_true
     history_dict['y_pred'] = y_pred
+    history_dict['y_train_true'] = y_train_true
+    history_dict['y_train_pred'] = y_pred_train
+    history_dict['train_accuracy'] = train_accuracy
+    history_dict['test_accuracy'] = test_accuracy
 
     model_path = os.path.join(MODEL_DIR, f'solarflare_tcn_manual_{mode_name}.h5')
     history_path = os.path.join(MODEL_DIR, f'train_history_manual_{mode_name}.pkl')
     model.save(model_path)
-
     with open(history_path, 'wb') as f:
         pickle.dump(history_dict, f)
 
     print(f"Model saved as {model_path}")
     print(f"History saved as {history_path}")
 
-    return model, history, y_pred, y_test_true
+    # === Save Comparison CSV ===
+    df_train = pd.DataFrame({'True_Train': y_train_true, 'Pred_Train': y_pred_train})
+    df_test = pd.DataFrame({'True_Test': y_test_true, 'Pred_Test': y_pred})
+    df_train.to_csv(os.path.join(OUTDIR, f'comparison_train_{mode_name}.csv'), index=False)
+    df_test.to_csv(os.path.join(OUTDIR, f'comparison_test_{mode_name}.csv'), index=False)
+
+    return model, history, y_pred, y_test_true, y_pred_train, y_train_true, train_accuracy, test_accuracy
 
 # --- Main Evaluation and Summary ---
 window_sizes = [2, 4, 5]
@@ -106,9 +136,9 @@ for w in window_sizes:
     try:
         print(f"\n\n🔄 Trying window_size = {w}")
 
-        # Build windowed dataset for both train and test
-        X_train_windowed, y_train_windowed = build_windowed_dataset(X_train_raw, y_train, window_size=w)
-        X_test_windowed, y_test_windowed = build_windowed_dataset(X_test_raw, y_test, window_size=w)
+        # Build windowed dataset for both train and test, using precursor-labeled y
+        X_train_windowed, y_train_windowed = build_windowed_dataset(X_train_raw, y_train_precursor, window_size=w)
+        X_test_windowed, y_test_windowed = build_windowed_dataset(X_test_raw, y_test_precursor, window_size=w)
 
         # One-hot encode new windowed y
         y_train_cat_windowed = np.eye(num_classes)[y_train_windowed]
@@ -121,7 +151,7 @@ for w in window_sizes:
             (f"log_scaled_weight_ws{w}", log_scaled_class_weight, False),
             (f"focal_ws{w}", None, True)
         ]:
-            model, history, y_pred, y_test_true = train_and_eval_tcn(
+            model, history, y_pred, y_test_true, y_pred_train, y_train_true, train_acc, test_acc = train_and_eval_tcn(
                 X_train_windowed, y_train_cat_windowed, X_test_windowed, y_test_cat_windowed,
                 num_classes, class_weight=class_weight, mode_name=mode_name, use_focal=use_focal
             )
@@ -138,8 +168,10 @@ for w in window_sizes:
             row = {
                 'Model': mode_name,
                 'Window Size': w,
-                'Accuracy': history.history['val_accuracy'][-1],
-                'Val Loss': history.history['val_loss'][-1],
+                'Train Accuracy': train_acc,
+                'Test Accuracy': test_acc,
+                'Val Accuracy (Last Epoch)': history.history['val_accuracy'][-1],
+                'Val Loss (Last Epoch)': history.history['val_loss'][-1],
             }
             row.update(per_class_summary)
             summary_results.append(row)
@@ -149,6 +181,6 @@ for w in window_sizes:
 
 # --- Save results to CSV ---
 summary_df = pd.DataFrame(summary_results)
-csv_path = os.path.join(OUTDIR, "model_eval_per_class_v2.csv")
+csv_path = os.path.join(OUTDIR, "model_eval_per_class_v3.csv")
 summary_df.to_csv(csv_path, index=False)
 print(f"\n✅ Model per-class evaluation summary saved to {csv_path}")

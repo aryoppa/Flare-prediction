@@ -69,8 +69,17 @@ def train_and_eval_tcn(X_train, y_train, X_test, y_test, num_classes, class_weig
         verbose=1
     )
 
+    # === Prediction: Test ===
     y_test_true = np.argmax(y_test, axis=1)
     y_pred = np.argmax(model.predict(X_test), axis=1)
+
+    # === Prediction: Train ===
+    y_train_true = np.argmax(y_train, axis=1)
+    y_pred_train = np.argmax(model.predict(X_train), axis=1)
+
+    # === Accuracy Comparison ===
+    train_accuracy = np.mean(y_train_true == y_pred_train)
+    test_accuracy = np.mean(y_test_true == y_pred)
 
     label_map = {0:'A', 1:'B', 2:'C', 3:'M', 4:'X'}
     target_names = [label_map[i] for i in sorted(label_map.keys())]
@@ -80,22 +89,31 @@ def train_and_eval_tcn(X_train, y_train, X_test, y_test, num_classes, class_weig
     print(f"\n--- Confusion Matrix ({mode_name}) ---")
     print(confusion_matrix(y_test_true, y_pred))
 
-    # Save model & history (with predictions!) in trained_model/
+    # === Save Model & History ===
     history_dict = history.history
     history_dict['y_test'] = y_test_true
     history_dict['y_pred'] = y_pred
+    history_dict['y_train_true'] = y_train_true
+    history_dict['y_train_pred'] = y_pred_train
+    history_dict['train_accuracy'] = train_accuracy
+    history_dict['test_accuracy'] = test_accuracy
 
     model_path = os.path.join(MODEL_DIR, f'solarflare_tcn_manual_{mode_name}.h5')
     history_path = os.path.join(MODEL_DIR, f'train_history_manual_{mode_name}.pkl')
     model.save(model_path)
-
     with open(history_path, 'wb') as f:
         pickle.dump(history_dict, f)
 
     print(f"Model saved as {model_path}")
     print(f"History saved as {history_path}")
 
-    return model, history, y_pred, y_test_true
+    # === Save Comparison CSV ===
+    df_train = pd.DataFrame({'True_Train': y_train_true, 'Pred_Train': y_pred_train})
+    df_test = pd.DataFrame({'True_Test': y_test_true, 'Pred_Test': y_pred})
+    df_train.to_csv(os.path.join(OUTDIR, f'comparison_train_{mode_name}.csv'), index=False)
+    df_test.to_csv(os.path.join(OUTDIR, f'comparison_test_{mode_name}.csv'), index=False)
+
+    return model, history, y_pred, y_test_true, y_pred_train, y_train_true, train_accuracy, test_accuracy
 
 # --- Main Evaluation and Summary ---
 window_sizes = [2, 4, 5]
@@ -121,7 +139,7 @@ for w in window_sizes:
             (f"log_scaled_weight_ws{w}", log_scaled_class_weight, False),
             (f"focal_ws{w}", None, True)
         ]:
-            model, history, y_pred, y_test_true = train_and_eval_tcn(
+            model, history, y_pred, y_test_true, y_pred_train, y_train_true, train_acc, test_acc = train_and_eval_tcn(
                 X_train_windowed, y_train_cat_windowed, X_test_windowed, y_test_cat_windowed,
                 num_classes, class_weight=class_weight, mode_name=mode_name, use_focal=use_focal
             )
@@ -138,8 +156,10 @@ for w in window_sizes:
             row = {
                 'Model': mode_name,
                 'Window Size': w,
-                'Accuracy': history.history['val_accuracy'][-1],
-                'Val Loss': history.history['val_loss'][-1],
+                'Train Accuracy': train_acc,
+                'Test Accuracy': test_acc,
+                'Val Accuracy (Last Epoch)': history.history['val_accuracy'][-1],
+                'Val Loss (Last Epoch)': history.history['val_loss'][-1],
             }
             row.update(per_class_summary)
             summary_results.append(row)
