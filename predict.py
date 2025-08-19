@@ -14,6 +14,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 IMG_SAVE_DIR = 'data/images_latest_24h'
 FEATURE_SAVE_PATH = 'data/datasets/X_last_24h.npy'
 MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_logscaled_ws2.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_logscaled_ws4.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_logscaled_ws5.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_classweight_ws2.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_classweight_ws4.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_classweight_ws5.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_ws2.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_ws4.h5'
+# MODEL_PATH = 'final/trained_model/solarflare_tcn_oversampled_ws5.h5'
 LABELS = ['No Flare', 'C', 'M', 'X']
 IMG_SIZE = (512, 512)
 
